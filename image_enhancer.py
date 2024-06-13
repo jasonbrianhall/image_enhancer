@@ -73,6 +73,10 @@ class ImageEditor(QWidget):
             'vignette': 0
         }
 
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.update_image_label()
+
     def create_slider(self, min_value, max_value, default_value, callback):
         slider = QSlider(Qt.Horizontal)
         slider.setMinimum(min_value)
