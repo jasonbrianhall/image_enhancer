@@ -62,6 +62,17 @@ class ImageEditor(QWidget):
         self.original_image = None
         self.modified_image = None
 
+        self.slider_values = {
+            'brightness': 0,
+            'contrast': 0,
+            'saturation': 0,
+            'exposure': 0,
+            'temperature': 0,
+            'gamma': 100,
+            'clarity': 0,
+            'vignette': 0
+        }
+
     def create_slider(self, min_value, max_value, default_value, callback):
         slider = QSlider(Qt.Horizontal)
         slider.setMinimum(min_value)
@@ -85,70 +96,82 @@ class ImageEditor(QWidget):
             if file_name:
                 self.modified_image.save(file_name)
 
-
     def update_image_label(self):
         if self.modified_image:
-            # Convert PIL image to NumPy array
             np_array = np.array(self.modified_image)
-        
-            # Convert NumPy array to QImage
             qimage = array2qimage(np_array)
-        
             pixmap = QPixmap.fromImage(qimage)
             self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
     def adjust_brightness(self, value):
-        if self.original_image:
-            enhancer = ImageEnhance.Brightness(self.original_image)
-            self.modified_image = enhancer.enhance(1 + value / 100)
-            self.update_image_label()
+        self.slider_values['brightness'] = value
+        self.apply_adjustments()
 
     def adjust_contrast(self, value):
-        if self.original_image:
-            enhancer = ImageEnhance.Contrast(self.original_image)
-            self.modified_image = enhancer.enhance(1 + value / 100)
-            self.update_image_label()
+        self.slider_values['contrast'] = value
+        self.apply_adjustments()
 
     def adjust_saturation(self, value):
-        if self.original_image:
-            enhancer = ImageEnhance.Color(self.original_image)
-            self.modified_image = enhancer.enhance(1 + value / 100)
-            self.update_image_label()
+        self.slider_values['saturation'] = value
+        self.apply_adjustments()
 
     def adjust_exposure(self, value):
-        if self.original_image:
-            self.modified_image = self.original_image.copy()
-            self.modified_image = self.modified_image.point(lambda p: p * (1 + value / 100))
-            self.update_image_label()
+        self.slider_values['exposure'] = value
+        self.apply_adjustments()
 
     def adjust_temperature(self, value):
-        if self.original_image:
-            r, g, b = self.original_image.split()
-            if value > 0:
-                r = r.point(lambda p: p + value)
-                b = b.point(lambda p: p - value)
-            else:
-                r = r.point(lambda p: p - abs(value))
-                b = b.point(lambda p: p + abs(value))
-            self.modified_image = Image.merge('RGB', (r, g, b))
-            self.update_image_label()
+        self.slider_values['temperature'] = value
+        self.apply_adjustments()
 
     def adjust_gamma(self, value):
-        if self.original_image:
-            gamma = value / 100
-            self.modified_image = self.original_image.copy()
-            self.modified_image = self.modified_image.point(lambda p: 255 * ((p / 255) ** gamma))
-            self.update_image_label()
+        self.slider_values['gamma'] = value
+        self.apply_adjustments()
 
     def adjust_clarity(self, value):
-        if self.original_image:
-            self.modified_image = self.original_image.copy()
-            self.modified_image = self.modified_image.filter(ImageFilter.UnsharpMask(radius=2, percent=value * 10, threshold=0))
-            self.update_image_label()
+        self.slider_values['clarity'] = value
+        self.apply_adjustments()
 
     def adjust_vignette(self, value):
+        self.slider_values['vignette'] = value
+        self.apply_adjustments()
+
+    def apply_adjustments(self):
         if self.original_image:
             self.modified_image = self.original_image.copy()
+
+            # Brightness
+            enhancer = ImageEnhance.Brightness(self.modified_image)
+            self.modified_image = enhancer.enhance(1 + self.slider_values['brightness'] / 100)
+
+            # Contrast
+            enhancer = ImageEnhance.Contrast(self.modified_image)
+            self.modified_image = enhancer.enhance(1 + self.slider_values['contrast'] / 100)
+
+            # Saturation
+            enhancer = ImageEnhance.Color(self.modified_image)
+            self.modified_image = enhancer.enhance(1 + self.slider_values['saturation'] / 100)
+
+            # Exposure
+            self.modified_image = self.modified_image.point(lambda p: p * (1 + self.slider_values['exposure'] / 100))
+
+            # Temperature
+            r, g, b = self.modified_image.split()
+            if self.slider_values['temperature'] > 0:
+                r = r.point(lambda p: p + self.slider_values['temperature'])
+                b = b.point(lambda p: p - self.slider_values['temperature'])
+            else:
+                r = r.point(lambda p: p - abs(self.slider_values['temperature']))
+                b = b.point(lambda p: p + abs(self.slider_values['temperature']))
+            self.modified_image = Image.merge('RGB', (r, g, b))
+
+            # Gamma
+            gamma = self.slider_values['gamma'] / 100
+            self.modified_image = self.modified_image.point(lambda p: 255 * ((p / 255) ** gamma))
+
+            # Clarity
+            self.modified_image = self.modified_image.filter(ImageFilter.UnsharpMask(radius=2, percent=self.slider_values['clarity'] * 10, threshold=0))
+
+            # Vignette
             width, height = self.modified_image.size
             center_x = width // 2
             center_y = height // 2
@@ -156,9 +179,10 @@ class ImageEditor(QWidget):
             for x in range(width):
                 for y in range(height):
                     distance = ((x - center_x) ** 2 + (y - center_y) ** 2) ** 0.5
-                    factor = 1 - (distance / max_distance) * (value / 100)
+                    factor = 1 - (distance / max_distance) * (self.slider_values['vignette'] / 100)
                     r, g, b = self.modified_image.getpixel((x, y))
                     self.modified_image.putpixel((x, y), (int(r * factor), int(g * factor), int(b * factor)))
+
             self.update_image_label()
 
 if __name__ == '__main__':
