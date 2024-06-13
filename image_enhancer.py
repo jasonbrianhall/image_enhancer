@@ -94,6 +94,10 @@ class ImageEditor(QWidget):
             options = QFileDialog.Options()
             file_name, _ = QFileDialog.getSaveFileName(self, 'Save Image', '', 'Image Files (*.png *.jpg *.bmp)', options=options)
             if file_name:
+                # Check if the file name has an extension
+                if '.' not in file_name:
+                    # If no extension is provided, default to PNG
+                    file_name += '.png'
                 self.modified_image.save(file_name)
 
     def update_image_label(self):
