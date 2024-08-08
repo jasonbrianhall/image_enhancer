@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QSlider, QPushButton, QFileDialog, QVBoxLayout, QHBoxLayout, QDesktopWidget
 from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from PIL import Image, ImageEnhance, ImageFilter
 from qimage2ndarray import array2qimage
 import numpy as np
@@ -16,15 +16,16 @@ class ImageEditor(QWidget):
         self.image_label = QLabel()
         self.image_label.setAlignment(Qt.AlignCenter)
 
-        self.brightness_slider = self.create_slider(-100, 100, 0, self.adjust_brightness)
-        self.contrast_slider = self.create_slider(-100, 100, 0, self.adjust_contrast)
-        self.saturation_slider = self.create_slider(-100, 100, 0, self.adjust_saturation)
-        self.exposure_slider = self.create_slider(-100, 100, 0, self.adjust_exposure)
-        self.temperature_slider = self.create_slider(-100, 100, 0, self.adjust_temperature)
-        self.gamma_slider = self.create_slider(0, 200, 100, self.adjust_gamma)
-        self.clarity_slider = self.create_slider(0, 20, 0, self.adjust_clarity)
-        self.vignette_slider = self.create_slider(0, 100, 0, self.adjust_vignette)
-        self.color_limit_slider = self.create_slider(2, 256, 256, self.adjust_color_limit)
+        self.brightness_slider = self.create_slider(-100, 100, 0, lambda v: self.queue_update('brightness', v))
+        self.contrast_slider = self.create_slider(-100, 100, 0, lambda v: self.queue_update('contrast', v))
+        self.saturation_slider = self.create_slider(-100, 100, 0, lambda v: self.queue_update('saturation', v))
+        self.exposure_slider = self.create_slider(-100, 100, 0, lambda v: self.queue_update('exposure', v))
+        self.temperature_slider = self.create_slider(-100, 100, 0, lambda v: self.queue_update('temperature', v))
+        self.gamma_slider = self.create_slider(0, 200, 100, lambda v: self.queue_update('gamma', v))
+        self.clarity_slider = self.create_slider(0, 20, 0, lambda v: self.queue_update('clarity', v))
+        self.vignette_slider = self.create_slider(0, 100, 0, lambda v: self.queue_update('vignette', v))
+        self.color_limit_slider = self.create_slider(2, 256, 256, lambda v: self.queue_update('color_limit', v))
+
 
         reset_button = QPushButton('Reset All')
         reset_button.clicked.connect(self.reset_all)
@@ -66,6 +67,49 @@ class ImageEditor(QWidget):
         main_layout.addLayout(button_layout)
 
         self.setLayout(main_layout)
+        
+        self.update_timer = QTimer(self)
+        self.update_timer.setSingleShot(True)
+        self.update_timer.timeout.connect(self.apply_adjustments)
+
+    def create_slider(self, min_value, max_value, default_value, callback):
+        slider = QSlider(Qt.Horizontal)
+        slider.setMinimum(min_value)
+        slider.setMaximum(max_value)
+        slider.setValue(default_value)
+        slider.valueChanged.connect(callback)
+        return slider
+
+    def queue_update(self, slider_name, value):
+        self.slider_values[slider_name] = value
+        self.update_timer.start(200)  # 200ms delay
+
+    def adjust_brightness(self, value):
+        self.slider_values['brightness'] = value
+
+    def adjust_contrast(self, value):
+        self.slider_values['contrast'] = value
+
+    def adjust_saturation(self, value):
+        self.slider_values['saturation'] = value
+
+    def adjust_exposure(self, value):
+        self.slider_values['exposure'] = value
+
+    def adjust_temperature(self, value):
+        self.slider_values['temperature'] = value
+
+    def adjust_gamma(self, value):
+        self.slider_values['gamma'] = value
+
+    def adjust_clarity(self, value):
+        self.slider_values['clarity'] = value
+
+    def adjust_vignette(self, value):
+        self.slider_values['vignette'] = value
+
+    def adjust_color_limit(self, value):
+        self.slider_values['color_limit'] = value
 
     def reset_all(self):
         # Reset all sliders to their default values
