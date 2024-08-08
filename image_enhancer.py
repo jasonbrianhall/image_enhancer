@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QSlider, QPushButton, QFileDialog, QVBoxLayout, QHBoxLayout
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QSlider, QPushButton, QFileDialog, QVBoxLayout, QHBoxLayout, QDesktopWidget
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtCore import Qt
 from PIL import Image, ImageEnhance, ImageFilter
@@ -10,7 +10,8 @@ class ImageEditor(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Image Editor')
-        self.setGeometry(100, 100, 800, 600)
+        self.resize(800, 600)
+        self.center()
 
         self.image_label = QLabel()
         self.image_label.setAlignment(Qt.AlignCenter)
@@ -58,6 +59,12 @@ class ImageEditor(QWidget):
         main_layout.addLayout(button_layout)
 
         self.setLayout(main_layout)
+
+    def center(self):
+        qr = self.frameGeometry()
+        cp = QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
 
         self.original_image = None
         self.modified_image = None
