@@ -26,6 +26,9 @@ class ImageEditor(QWidget):
         self.vignette_slider = self.create_slider(0, 100, 0, self.adjust_vignette)
         self.color_limit_slider = self.create_slider(2, 256, 256, self.adjust_color_limit)
 
+        reset_button = QPushButton('Reset All')
+        reset_button.clicked.connect(self.reset_all)
+
         load_button = QPushButton('Load Image')
         load_button.clicked.connect(self.load_image)
 
@@ -55,6 +58,7 @@ class ImageEditor(QWidget):
         button_layout = QHBoxLayout()
         button_layout.addWidget(load_button)
         button_layout.addWidget(save_button)
+        button_layout.addWidget(reset_button)
 
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.image_label)
@@ -62,6 +66,36 @@ class ImageEditor(QWidget):
         main_layout.addLayout(button_layout)
 
         self.setLayout(main_layout)
+
+    def reset_all(self):
+        # Reset all sliders to their default values
+        self.brightness_slider.setValue(0)
+        self.contrast_slider.setValue(0)
+        self.saturation_slider.setValue(0)
+        self.exposure_slider.setValue(0)
+        self.temperature_slider.setValue(0)
+        self.gamma_slider.setValue(100)
+        self.clarity_slider.setValue(0)
+        self.vignette_slider.setValue(0)
+        self.color_limit_slider.setValue(256)
+
+        # Reset the slider_values dictionary
+        self.slider_values = {
+            'brightness': 0,
+            'contrast': 0,
+            'saturation': 0,
+            'exposure': 0,
+            'temperature': 0,
+            'gamma': 100,
+            'clarity': 0,
+            'vignette': 0,
+            'color_limit': 256
+        }
+
+        # If an image is loaded, reset it to the original
+        if self.original_image:
+            self.modified_image = self.original_image.copy()
+            self.update_image_label()
 
     def center(self):
         qr = self.frameGeometry()
