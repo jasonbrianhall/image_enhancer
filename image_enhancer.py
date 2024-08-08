@@ -24,6 +24,7 @@ class ImageEditor(QWidget):
         self.gamma_slider = self.create_slider(0, 200, 100, self.adjust_gamma)
         self.clarity_slider = self.create_slider(0, 20, 0, self.adjust_clarity)
         self.vignette_slider = self.create_slider(0, 100, 0, self.adjust_vignette)
+        self.color_limit_slider = self.create_slider(2, 256, 256, self.adjust_color_limit)
 
         load_button = QPushButton('Load Image')
         load_button.clicked.connect(self.load_image)
@@ -48,6 +49,8 @@ class ImageEditor(QWidget):
         slider_layout.addWidget(self.clarity_slider)
         slider_layout.addWidget(QLabel('Vignette'))
         slider_layout.addWidget(self.vignette_slider)
+        slider_layout.addWidget(QLabel('Color Limit'))
+        slider_layout.addWidget(self.color_limit_slider)
 
         button_layout = QHBoxLayout()
         button_layout.addWidget(load_button)
@@ -77,7 +80,8 @@ class ImageEditor(QWidget):
             'temperature': 0,
             'gamma': 100,
             'clarity': 0,
-            'vignette': 0
+            'vignette': 0,
+            'color_limit': 256
         }
 
     def resizeEvent(self, event):
@@ -150,6 +154,10 @@ class ImageEditor(QWidget):
         self.slider_values['vignette'] = value
         self.apply_adjustments()
 
+    def adjust_color_limit(self, value):
+        self.slider_values['color_limit'] = value
+        self.apply_adjustments()
+
     def apply_adjustments(self):
         if self.original_image:
             self.modified_image = self.original_image.copy()
@@ -197,6 +205,10 @@ class ImageEditor(QWidget):
                     factor = 1 - (distance / max_distance) * (self.slider_values['vignette'] / 100)
                     r, g, b = self.modified_image.getpixel((x, y))
                     self.modified_image.putpixel((x, y), (int(r * factor), int(g * factor), int(b * factor)))
+
+            # Color Limit (Quantization)
+            if self.slider_values['color_limit'] < 256:
+                self.modified_image = self.modified_image.quantize(colors=self.slider_values['color_limit']).convert('RGB')
 
             self.update_image_label()
 
